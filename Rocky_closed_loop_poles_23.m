@@ -18,9 +18,6 @@
 %
 % based on code by SG. last modified 2/25/23 CL
 
-clear all; 
-close all;
-
 syms s a b l g Kp Ki    % define symbolic variables
 
 Hvtheta = -s/l/(s^2-g/l);       % TF from velocity to angle of pendulum
@@ -38,9 +35,9 @@ pretty(simplify(Hcloop))       % to display the total transfer function
 % Substitute parameters and solve
 % system parameters
 g = 9.81;
-l = 22*2.54/100   %effective length 
-a = 14;           %nominal motor parameters
-b = 1/400;        %nominal motor parameters
+l = 0.4873   %effective length 
+a = 23.2135;           %nominal motor parameters
+b = 0.0030;        %nominal motor parameters
 
 Hcloop_sub = subs(Hcloop) % sub parameter values into Hcloop
 
@@ -48,7 +45,7 @@ Hcloop_sub = subs(Hcloop) % sub parameter values into Hcloop
 % choose # based on order of Htot denominator
 % e.g., want some oscillations, want fast decay, etc. 
 p1 = -1+ i   % dominant pole pair
-p2 = -1 =i     % dominant pole pair 
+p2 = -1 -i     % dominant pole pair 
 p3 = -20
 
 
