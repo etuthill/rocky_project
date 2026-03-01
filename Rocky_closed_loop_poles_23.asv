@@ -66,39 +66,34 @@ title("Impulse Responses for All Pole Sets");
 
 %%
 
-alpha   = 23.2135;
-beta_eff = 0.0030; 
-ell_eff = 9.81/0.4873;
-omega_n = sqrt(ell_eff);
-
-
-p1 = -alpha/3;
-p2 = -alpha/3;
-p3 = -alpha/3;
-
-Kp = (ell_eff/(alpha*beta_eff))*(alpha^2/3 + omega_n^2);
-Ki = (ell_eff/(alpha*beta_eff))*(alpha^3/27 + alpha*omega_n^2);
-
-Kp_val = double(Kp);
-Ki_val = double(Ki);
-
+p1 = -0.49;
+p2 = -0.49;
+p3 = -0.01;
 
 tgt_char_poly = expand((s - p1)*(s - p2)*(s - p3));
-den_coeffs = double(sym2poly(tgt_char_poly));
-num_coeff = 1;
 
-TFH = tf(num_coeff, den_coeffs);
+[~, d] = numden(Hcloop_sub);
+coeffs_denom = coeffs(d, s);
+coeffs_denom = coeffs_denom / coeffs_denom(end);
+coeffs_tgt = coeffs(tgt_char_poly, s);
+coeffs_tgt = coeffs_tgt / coeffs_tgt(end);
 
+solutions = solve(coeffs_denom(1:3) == coeffs_tgt(1:3), [Kp, Ki]);
+Kp_val = double(solutions.Kp);
+Ki_val = double(solutions.Ki);
 
-t = 0:0.01:10;
-figure(1); impulse(TFH, t);
-figure(2); step(TFH, t);
+Hcloop_num = subs(Hcloop, {Kp, Ki}, {Kp_val, Ki_val});
+[num_sym, den_sym] = numden(Hcloop_num);
 
-Kp_val
-Ki_val
+num = double(fliplr(coeffs(num_sym, s)));
+den = double(fliplr(coeffs(den_sym, s)));
 
-disp("Desired poles:")
-disp([p1 p2 p3])
+DCgain = sum(num)/sum(den);
+num = num / DCgain;
 
-disp("Actual poles from TFH:")
-disp(pole(TFH))
+TFH = tf(num, den);
+
+figure(1)
+impulse(TFH, 0:0.01:10);
+figure(2)
+step(TFH, 0:0.01:10);
