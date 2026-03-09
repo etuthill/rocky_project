@@ -1,145 +1,115 @@
-% Rocky_5_closed_loop_poles.m
-%
-% 1) Symbolically calculates closed loop transfer function of PI disturbannce
-% rejection control system for Rocky. 
-% No motor model (M =1). With motor model (1st order TF)
-%
-% 2) Specify location of (target)poles based on desired reponse. The number of
-% poles = denominator polynomial of closed loop TF
-%
-% 3) Extract the closed loop denomiator poly and set = polynomial of target
-% poles
-%
-% 4) Solve for Ki, Kp, Ji, Jp, Ci to match coefficients of polynomials. In general,
-% this will be underdefined and will not be able to place poles in exact
-% locations. In this case (5th order), the control constants can be found exactly 
-%
-% 5) Plot impulse response to see closed-loop behavior. 
-%
-% based on code by SG. last modified 3/8/22 CL
+% Rocky_5_closed_loop_poles_auto.m
+clear
+close all
 
-clear all; 
-close all;
+syms s a b l g Kp Ki Jp Ji Ci
 
-syms s a b l g Kp Ki Jp Ji Ci   % define symbolic variables
+Hvtheta = -s/l/(s^2-g/l);
+K = Kp + Ki/s;
+M = a*b/(s+a);
+J = Jp + Ji/s + Ci/s^2;
+Mfb = M/(1+M*J);
+Hcloop = 1/(1-Hvtheta*Mfb*K);
 
-Hvtheta = -s/l/(s^2-g/l);       % TF from velocity to angle of pendulum
-
-K = Kp + Ki/s;                  % TF of the PI angle controller
-M = a*b/(s+a);                  % TF of motor (1st order model) 
-% M = 1;                        % TF without motor
-%
-J = Jp + Ji/s + Ci/s^2;         % TF of controller around motor-combined PI of x and v
-Mfb = M/(1+M*J);                % Black's formula to get tf for motor with PI feedback control 
-
-%  
-% closed loop transfer function from disturbance d(t)totheta(t)
-% Hcloop = 1/(1-Hvtheta*M*K)    % use this for no motor feedback
-% with motor feedback
-Hcloop = 1/(1-Hvtheta*Mfb*K)    % use this for motor with feedback
-
-pretty(simplify(Hcloop))       % to display the total transfer function
-
-% Substitute parameters and solve
 % system parameters
 g = 9.81;
-l = 22*2.54/100;  %effective length 
-a = 14;           %nominal motor parameters
-b = 1/400;        %nominal motor parameters
+l = 0.4873;
+a = 23.2135;
+b = 0.003;
 
-Hcloop_sub = subs(Hcloop) % sub parameter values into Hcloop
+Hcloop_sub = subs(Hcloop);
 
-% specify locations of the target poles,
-% choose # based on order of Htot denominator
-% e.g., want some oscillations, want fast decay, etc. 
+best_cost = inf;
+best_poles = [];
+best_gains = [];
+best_TF = [];
 
-% p1 = -1 + 2*pi*i    % dominant pole pair
-% p2 = -1 - 2*pi*i    % dominant pole pair 
-% p3 = -10
-% p4 = -8
-% p5 = -8.
+sigma_range = 3:0.5:5;
+omega_range = 3:0.5:5;
 
-p1 = -1 + 2*i   % dominant pole pair
-p2 = -1 -2*i    % dominant pole pair 
-p3 = -6
-p4 = -42    % dominant pole pair
-p5 = -24     % dominant pole pair 
+p3_range = -8:-2:-12;
+p4_range = -20:-5:-35;
+p5_range = -25:-5:-45;
 
-% target characteristic polynomial
-% if motor model (TF) is added, order of polynomial will increases
-% tgt_char_poly = (s-p1)*(s-p2)*(s-p3)
+for sigma = sigma_range
+for omega = omega_range
+for p3 = p3_range
+for p4 = p4_range
+for p5 = p5_range
 
-% check polynomial-expand to fifth order 
-tgt_char_poly = (s-p1)*(s-p2)*(s-p3)*(s-p4)*(s-p5)
-exp_tgt_char_poly = expand(tgt_char_poly)
+try
 
-% get the denominator from Hcloop_sub
-[n d] = numden(Hcloop_sub)
+p1 = -sigma + 1i*omega;
+p2 = -sigma - 1i*omega;
 
-% find the coefficients of the denominator polynomial TF
-coeffs_denom = coeffs(d, s)
+tgt_poly = expand((s-p1)*(s-p2)*(s-p3)*(s-p4)*(s-p5));
 
-% divide though the coefficient of the highest power term
-coeffs_denom = coeffs(d, s)/(coeffs_denom(end))
-% num_coeff_denom = length(coeffs_denom)
+[n,d] = numden(Hcloop_sub);
 
-% find coefficients of the target charecteristic polynomial
-coeffs_tgt = coeffs(tgt_char_poly, s)
-% num_coeff_tgt = length(coeffs_tgt)
+coeffs_d = coeffs(d,s,'All');
+coeffs_t = coeffs(tgt_poly,s,'All');
 
-% for check. reorder the coefficients to match the denomimator polynomial
-for ii = 1:length(coeffs_denom)
-    reord_coeffs_tgt(ii) = coeffs_tgt(length(coeffs_tgt) + 1 - ii);
-end
-% check roots of target polynomial-should be same as selected poles
-roots_target = vpa(roots(reord_coeffs_tgt),4)
+coeffs_d = coeffs_d/coeffs_d(1);
+coeffs_t = coeffs_t/coeffs_t(1);
 
+sol = solve(coeffs_d(2:6)==coeffs_t(2:6),Jp,Ji,Kp,Ki,Ci);
 
-% solve the system of equations setting the coefficients of the
-% polynomial in the target to the actual polynomials
-solutions = solve(coeffs_denom(1:5) == coeffs_tgt(1:5), Jp, Ji,  Kp, Ki, Ci);
-
-% display the solutions as double precision numbers
-Kp = double(solutions.Kp)
-Ki = double(solutions.Ki)
-Ji = double(solutions.Ji)
-Jp = double(solutions.Jp)
-Ci = double(solutions.Ci)
-
-%write out denominator polynomial 
-aaa = vpa(subs(coeffs_denom),4)
-
-% reorder coefficients for the check polynomial 
-for ii = 1:length(coeffs_denom)
-    chk_coeffs_denom(ii) = coeffs_denom(length(coeffs_denom) + 1 - ii);
+if isempty(sol)
+continue
 end
 
-% check poles should be same as chosen input poles 
-check_closed_loop_poles = vpa (roots(subs(chk_coeffs_denom)), 4)
+Kp_val = double(sol.Kp);
+Ki_val = double(sol.Ki);
+Ji_val = double(sol.Ji);
+Jp_val = double(sol.Jp);
+Ci_val = double(sol.Ci);
 
-% write out target polynomial 
-% bbb = vpa( expand( (s-check_closed_loop_poles(1))*(s-check_closed_loop_poles(2)) ...
-%     *(s-check_closed_loop_poles(3))*(s-check_closed_loop_poles(4)) ...
-%     *(s-check_closed_loop_poles(5)) ) )
+if ~isreal([Kp_val Ki_val Ji_val Jp_val Ci_val])
+continue
+end
 
+TFexpr = subs(Hcloop,{Kp,Ki,Jp,Ji,Ci},{Kp_val,Ki_val,Jp_val,Ji_val,Ci_val});
 
+TFstring = char(TFexpr);
 
-% Plot impulse and step responses of closed-loop system
-    TFstring = char(subs(Hcloop));
-    % Define 's' as transfer function variable
-    s = tf('s');
-    % Evaluate the expression
-    eval(['TFH = ',TFstring]);
-    figure (1)
-    impulse(TFH);   %plot the impulse reponse
-    figure(2)
-    step(TFH)       %plot the step response
-    
-    
+s = tf('s');
+TFH = eval(TFstring);
 
+info = stepinfo(TFH);
 
+Ts = info.SettlingTime;
+Mp = info.Overshoot;
 
+cost = Ts + 0.005*Mp;
 
+if cost < best_cost
 
+best_cost = cost;
+best_poles = [p1 p2 p3 p4 p5];
+best_gains = [Kp_val Ki_val Ji_val Jp_val Ci_val];
+best_TF = TFH;
 
+end
 
+catch
+end
+
+end
+end
+end
+end
+end
+
+disp('Best poles:')
+disp(best_poles)
+
+disp('Controller gains [Kp Ki Ji Jp Ci]:')
+disp(best_gains)
+
+figure
+step(best_TF)
+title('Best Step Response')
+
+figure
+impulse(best_TF)
+title('Best Impulse Response')
