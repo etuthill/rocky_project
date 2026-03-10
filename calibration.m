@@ -85,28 +85,36 @@ t_g = pendulum_data(1055:end,1); theta = pendulum_data(1055:end,2);
 %plot the motor calibration data
 figure(1);
 hold on
-plot(t_g,theta,'k','linewidth',1);
+plot(t_g,theta);
 xlabel('time (sec)'); ylabel('angle (rad)');
-title('Pendulum Calibration Data');
-
+title('Pendulum Fit');
 steady_index = t_g > (t_g(end) - 2);
 angle_offset = mean(theta(steady_index))
 
-%% natural frequency
 
 t_fit = t_g - t_g(1);
 
 t_fit = t_fit(:);
 x = theta(:);
 
-signal_params = regress_underdamped_response(t_fit,x);
+%  regression
+signal_params = regress_underdamped_response(t_fit, x);
 
+% parameters
 omega_n = signal_params.omega_n;
 zeta = signal_params.zeta;
-f_n = omega_n/(2*pi);
+omega_n_2 = omega_n^2;
 
-omega_n_2 = omega_n^2
+plot(t_fit + t_g(1), signal_params.x_approx, '--', 'LineWidth', 2);
+
+xlabel('Time (sec)'); 
+ylabel('Angle (rad)');
+title('Pendulum Fit: Measured vs. Analytical');
+legend('Measured Data', 'Fitted Response');
 
 %% effective length
+% l = g / omega_n^2
+l_eff = 9.81 / omega_n_2;
+fprintf('Estimated Effective Length: %.4f meters\n', l_eff);
 
-l_eff = 9.81/omega_n_2
+
