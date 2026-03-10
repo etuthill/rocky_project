@@ -44,8 +44,6 @@ t_fit = t_fit - t_fit(1);
 ft = fittype('c*(1-exp(-a*x))');
 model = fit(t_fit,v_fit,ft);
 
-t_fit - t_fit - t_fit(1);
-
 a = model.a;
 c = model.c;
 
@@ -56,6 +54,24 @@ beta = c/Y;
 
 alpha
 beta
+
+%% plot fit vs data
+
+figure
+hold on
+
+plot(t_fit, v_fit, 'k.', 'DisplayName','Motor data')
+
+t_model = linspace(min(t_fit), max(t_fit), 200);
+v_model = model.c*(1-exp(-model.a*t_model));
+
+plot(t_model, v_model, 'r', 'LineWidth',2, 'DisplayName','Exponential fit')
+
+xlabel('time (sec)')
+ylabel('wheel speed (m/s)')
+title('Motor Step Response Fit')
+
+legend("Location","best")
 
 %% gyro calibration
 figure
@@ -72,6 +88,9 @@ hold on
 plot(t_g,theta,'k','linewidth',1);
 xlabel('time (sec)'); ylabel('angle (rad)');
 title('Pendulum Calibration Data');
+
+steady_index = t_g > (t_g(end) - 2);
+angle_offset = mean(theta(steady_index))
 
 %% natural frequency
 
