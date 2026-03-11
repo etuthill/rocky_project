@@ -36,9 +36,7 @@ for f1 = frac_set
         Kp_val = (l_val/(alpha*beta))*(A1 + omega_n^2);
         Ki_val = (l_val/(alpha*beta))*(A0 + alpha*omega_n^2);
 
-        Den = s^3 + alpha*s^2 + ...
-              (Kp_val*alpha*beta/l_val - omega_n^2)*s + ...
-              (Ki_val*alpha*beta/l_val - alpha*omega_n^2);
+        Den = s^3 + alpha*s^2 +(Kp_val*alpha*beta/l_val - omega_n^2)*s + (Ki_val*alpha*beta/l_val - alpha*omega_n^2);
 
         Num = (s + alpha)*(s^2 - omega_n^2);
 

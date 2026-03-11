@@ -89,7 +89,7 @@ plot(t_g,theta);
 xlabel('time (sec)'); ylabel('angle (rad)');
 title('Pendulum Fit');
 steady_index = t_g > (t_g(end) - 2);
-angle_offset = mean(theta(steady_index))
+angle_offset = mean(theta(steady_index));
 
 
 t_fit = t_g - t_g(1);
