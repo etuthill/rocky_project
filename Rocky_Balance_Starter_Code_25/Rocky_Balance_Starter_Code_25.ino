@@ -68,7 +68,7 @@ Balboa32U4Buzzer buzzer;
 Balboa32U4ButtonA buttonA;
 
 
-#define FIXED_ANGLE_CORRECTION (0.014)  // ***** Replace the value 0.25 with the value you obtained from the Gyro calibration procedure
+#define FIXED_ANGLE_CORRECTION (0.0) // ***** Replace the value 0.25 with the value you obtained from the Gyro calibration procedure
 
 
 
@@ -119,8 +119,6 @@ void BalanceRocky() {
   // *** enter equations for input signals for v_c (left and right) in terms of the variables available ****
   v_c_R = v_d + Jp * (v_d - measured_speedR) + Ji * speed_err_right_acc + Ci * dist_accum;
   v_c_L = v_d + Jp * (v_d - measured_speedL) + Ji * speed_err_left_acc + Ci * dist_accum;
-
-
 
 
 
@@ -192,12 +190,13 @@ void UpdateSensors() {
   // call functions to integrate encoders and gyros
   balanceUpdateSensors();
 
-  if (imu.a.x < 0) {
-    lyingDown();
-    isBalancingStatus = false;
-  } else {
-    isBalancingStatus = true;
-  }
+  imu.read();
+if (imu.a.x > 0) {
+  isBalancingStatus = true;
+} else {
+  lyingDown();
+  isBalancingStatus = false;
+}
 }
 
 
@@ -235,6 +234,7 @@ void balanceResetAccumulators() {
 
 void loop() {
   static uint32_t prev_print_time = 0;  // this variable is to control how often we print on the serial monitor
+  static uint32_t prev_diag_time = 0;
   int16_t distanceDiff;                 // this stores the difference in distance in encoder clicks that was traversed by the right vs the left wheel
   static float del_theta = 0;
   char enableLongTermGyroCorrection = 1;
@@ -286,7 +286,7 @@ void loop() {
   if (start_flag && angle_rad > .78) {
     motors.setSpeeds(0, 0);
     start_flag = 0;
-  } else if (start_flag && angle < -0.78) {
+  } else if (start_flag && angle_rad < -0.78) {
     motors.setSpeeds(0, 0);
     start_flag = 0;
   }
@@ -312,25 +312,25 @@ void loop() {
     prev_print_time = cur_time;
   }
 
-  if (cur_time - prev_print_time > 100)
-{
-  Serial.print("angle_rad: ");
-  Serial.print(angle_rad,5);
+  if (cur_time - prev_diag_time > 100)
+  {
+    Serial.print("angle_rad: ");
+    Serial.print(angle_rad,5);
 
-  Serial.print("  start_counter: ");
-  Serial.print(start_counter);
+    Serial.print("  start_counter: ");
+    Serial.print(start_counter);
 
-  Serial.print("  start_flag: ");
-  Serial.print(start_flag);
+    Serial.print("  start_flag: ");
+    Serial.print(start_flag);
 
-  Serial.print("  imu.ax: ");
-  Serial.print(imu.a.x);
+    Serial.print("  imu.ax: ");
+    Serial.print(imu.a.x);
 
-  Serial.print("  balancing: ");
-  Serial.print(isBalancingStatus);
+    Serial.print("  balancing: ");
+    Serial.print(isBalancingStatus);
 
-  Serial.println();
+    Serial.println();
 
-  prev_print_time = cur_time;
-}
+    prev_diag_time = cur_time;
+  }
 }
