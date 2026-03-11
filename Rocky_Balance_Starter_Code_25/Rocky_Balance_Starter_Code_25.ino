@@ -66,11 +66,11 @@ Balboa32U4ButtonA buttonA;
 void BalanceRocky() {
 
   // **************Enter the control parameters here
-  float Kp = 1430.3f;
-  float Ki = 6652.4f;
-  float Jp = 1.4359f;
-  float Ji = -33.3667f;
-  float Ci = -0.8262f;
+float Kp = 600.0f;   // main angle gain — responsive but not slamming
+float Ki = 80.0f;    // small angle integral — fights drift slowly
+float Jp = 2.0f;     // speed proportional — helps motors react faster
+float Ji = -4.0f;    // speed integral — builds up faster as tilt grows
+float Ci = -0.15f;   // distance integral — just enough to fight slow drift
 
   float v_c_L, v_c_R;  // these are the control velocities to be sent to the motors
   float v_d = 0;       // this is the desired speed produced by the angle controller
@@ -121,14 +121,28 @@ void BalanceRocky() {
 
   // Set the motor speeds
   motors.setSpeeds((int16_t)(v_c_L), (int16_t)(v_c_R));
+
+  // angle integral clamp
+  if(angle_rad_accum > 0.05f) angle_rad_accum = 0.05f;
+  if(angle_rad_accum < -0.05f) angle_rad_accum = -0.05f;
+
+  // speed error integral clamp
+  if(speed_err_left_acc > 1.0f) speed_err_left_acc = 1.0f;
+  if(speed_err_left_acc < -1.0f) speed_err_left_acc = -1.0f;
+  if(speed_err_right_acc > 1.0f) speed_err_right_acc = 1.0f;
+  if(speed_err_right_acc < -1.0f) speed_err_right_acc = -1.0f;
+
+  // distance integral clamp
+  if(dist_accum > 0.1f) dist_accum = 0.1f;
+  if(dist_accum < -0.1f) dist_accum = -0.1f;
 }
 
 
 
 void setup() {
 
-  motors.flipLeftMotor(true);
-  motors.flipRightMotor(true);
+  //motors.flipLeftMotor(true);
+  //motors.flipRightMotor(true);
 
   Serial.begin(9600);
 
