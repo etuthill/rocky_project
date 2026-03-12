@@ -1,8 +1,6 @@
 % Rocky_5_closed_loop_poles_auto.m
 clear
 close all
-
-%% Symbolic definitions
 syms s a b l g Kp Ki Jp Ji Ci
 
 % Pendulum and motor TFs
@@ -13,7 +11,6 @@ J = Jp + Ji/s + Ci/s^2;         % Controller around motor
 Mfb = M/(1 + M*J);              % Closed-loop motor TF
 Hcloop = 1/(1 - Hvtheta*Mfb*K); % Closed-loop TF from disturbance
 
-%% System parameters
 g = 9.81;
 l = 0.4873;
 a = 23.2135;
@@ -21,7 +18,6 @@ b = 0.003;
 
 Hcloop_sub = subs(Hcloop);
 
-%% Search ranges for poles
 sigma_range = 1.5:0.5:3;    % Real part of complex pair (moderate speed)
 omega_range = 2:0.5:4;      % Imag part of complex pair
 
